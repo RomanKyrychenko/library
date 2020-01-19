@@ -1,3 +1,4 @@
+require(dplyr)
 require(rvest)
 require(ggplot2)
 require(ggtext)
