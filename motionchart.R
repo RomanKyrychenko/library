@@ -1,15 +1,17 @@
 library(googleVis)
 library(RJSONIO)
-url = "http://api.worldbank.org/countries/all/indicators/IT.NET.USER.P3?date=1990:2010&format=json&per_page=12000"
-iu = fromJSON(url)
-internetUsers = data.frame(year = as.numeric(sapply(iu[[2]], "[[", "date")),
-                           InternetUsersPerThousands = as.numeric(sapply(iu[[2]],
-                                                                         function(x) ifelse(is.null(x[["value"]]),  NA, x[["value"]]))),
-                           country = sapply(iu[[2]], function(x)
-                             x[["country"]]['value']))
+url <- "http://api.worldbank.org/countries/all/indicators/IT.NET.USER.P3?date=1990:2010&format=json&per_page=12000"
+iu <- fromJSON(url)
+internetUsers <- data.frame(
+  year = as.numeric(sapply(iu[[2]], "[[", "date")),
+  InternetUsersPerThousands = as.numeric(sapply(
+    iu[[2]],
+    function(x) ifelse(is.null(x[["value"]]), NA, x[["value"]])
+  )),
+  country = sapply(iu[[2]], function(x)
+    x[["country"]]["value"])
+)
 
-## Create a line plot with gvisMotionChart
-## Set initial state with a few regions selected and a log y-axes
 myState <- '
 {"yZoomedIn":false,"yZoomedDataMin":0,"xAxisOption":"_TIME",
  "xZoomedDataMax":1230768000000,"time":"2009","playDuration":15000,
@@ -26,6 +28,8 @@ myState <- '
  "dimensions":{"iconDimensions":["dim0"]},
  "yZoomedDataMax":220,"xZoomedIn":false,"iconType":"LINE"}
 '
-M <- gvisMotionChart(internetUsers, "country", "year", 
-                     options=list(width=650, height=350, state=myState))
+M <- gvisMotionChart(internetUsers, idvar = "country", timevar = "year", sizevar = "InternetUsersPerThousands",
+  options = list(width = 650, height = 350, state = myState)
+)
+
 plot(M)
