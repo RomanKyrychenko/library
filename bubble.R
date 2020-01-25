@@ -1,11 +1,10 @@
 require(rCharts)
 
-gci <- read_csv("~/backup/gaz/GCI.csv")
-rat <- read_csv("~/backup/gaz/rating.csv")
+gci <- read_csv("data/GCI.csv")
+gci3 <- read_csv("data/GCI3.csv")
+rat <- read_csv("data/rating.csv")
+
 gci_rating <- inner_join(rat, gci, by = c("Global Competitiveness Index" = "Economy"))
-
-gci3 <- read_csv("~/backup/gaz/GCI3.csv")
-
 
 rat <- mutate(rat, "Середні коливання індексу 2006-2016" = Среднее * (-1))
 
@@ -17,6 +16,7 @@ ggplot(rat, aes(`Global Competitiveness Index`, `Середні коливанн
 h1 <- hPlot(x = "2016-2017", y = "Середні коливання індексу 2006-2016", size = "Score1", data = rat, type = c(
   "bubble", "scatter"
 ))
+
 h1$print("chart5")
 
 h1 <- hPlot("2016-2017", "Середні коливання індексу 2006-2016", size = "Score1", data = rat, type = "bubble")
@@ -50,6 +50,7 @@ Bubble <- gvisBubbleChart(gci_rating,
   yvar = "Середні коливання індексу 2006-2016", colorvar = "Країна", sizevar = "GDP per Capita 2015 current $",
   options = list(hAxis = "{minValue:2.5, maxValue:5}", width = 1100, height = 800)
 )
+
 plot(Bubble)
 
 Bubble <- gvisBubbleChart(gci_rating,
@@ -72,10 +73,6 @@ bub1 <- gvisBubbleChart(gci_rating,
   )
 )
 
-
-
-
-
 pk <- c(
   "Інститути", "Інфраструктура", "Макроекономіка", "Здоров'я",
   "Вища освіта", "Ринки", "Праця",
@@ -93,8 +90,8 @@ Gauge <- gvisGauge(pok,
     redFrom = 0, redTo = 3, width = 900, height = 600
   )
 )
-plot(Gauge)
 
+plot(Gauge)
 
 ggplot(long_dat, aes(x = variable, y = value, colour = id, group = id)) +
   geom_line() +
@@ -109,4 +106,3 @@ df$`Позиція в рейтингу` <- df$val1 * (-1)
 Line <- gvisLineChart(df)
 plot(Line)
 
-head(CityPopularity)
