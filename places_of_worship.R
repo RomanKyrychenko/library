@@ -1,3 +1,7 @@
+#'
+#' This script contains code to download data from OpenStreetMap and create map of places of worship in Europe
+#'
+
 suppressPackageStartupMessages({
   require(dplyr)
   require(osmdata)
@@ -8,7 +12,7 @@ suppressPackageStartupMessages({
 #' to download data from osm
 #'
 
-os <- function(type, start = -10, end = 50) {
+osm_download <- function(type, start = -10, end = 50) {
   b <- combn(start:end, 2) %>% t() 
   b <- b[!duplicated(b[,1]),]
   cw <- opq(bbox = c(b[1,1], 35, b[1,2], 70), 
@@ -25,37 +29,23 @@ os <- function(type, start = -10, end = 50) {
     xdf <- rbind(xdf, as_tibble(cw$osm_points@coords))
     cat(paste0(round(i/nrow(b),2)*100,"% \n"))
   }
-  xdf
+  xdf %>% mutate(type)
 } 
 
-have_file <- TRUE
+places_of_worship <- c('mosque', 'synagogue', 'cathedral', 'church', 'chapel', 'temple', 'shrine')
+
+have_file <- file.exists("data/worship.fst")
 
 if(!have_file) {
-  mosque <- os('mosque')
   
-  synagogue <- os('synagogue')
+  worship <- purrr::map_dfr(places_of_worship, osm_download)
   
-  cathedral <- os('cathedral')
+  fst::write_fst(worship, "data/worship.fst")
   
-  church <- os('church')
-  
-  chapel <- os('chapel')
-  
-  temple <- os('temple')
-  
-  shrine <- os('shrine')
-  
-  worship <-  bind_rows(
-      mosque %>% mutate(type = "mosque"),
-      synagogue %>% mutate(type = "synagogue"),
-      cathedral %>% mutate(type = "cathedral"),
-      temple %>% mutate(type = "temple"),
-      shrine %>% mutate(type = "shrine"),
-      chapel %>% mutate(type = "chapel"),
-      church %>% mutate(type = "church")
-    ) 
 } else {
+  
   worship <- fst::read_fst("data/worship.fst")
+  
 }
 
 p <- worship %>% 
