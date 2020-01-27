@@ -37,29 +37,7 @@ if(!have_file) {
   
   cathedral <- os('cathedral')
   
-  church <- os('church', start = -10, end = 10)
-  
-  church2 <- os('church', start = 10, end = 12)
-  
-  church3 <- os('church', start = 12, end = 14)
-  
-  church4 <- os('church', start = 20, end = 30)
-  
-  church5 <- os('church', start = 30, end = 50)
-  
-  church6 <- os('church', start = 14, end = 20) 
-  
-  church7 <- os('church', start = 13, end = 15) 
-  
-  church8 <- os('church', start = 9, end = 11) 
-  
-  church9 <- os('church', start = 29, end = 31) 
-  
-  church10 <- os('church', start = 19, end = 21) 
-  
-  church11 <- os('church', start = 11, end = 13) 
-  
-  church12 <- os('church', start = -11, end = -9)
+  church <- os('church')
   
   chapel <- os('chapel')
   
@@ -67,28 +45,15 @@ if(!have_file) {
   
   shrine <- os('shrine')
   
-  church_full <- bind_rows(
-    church %>% mutate(type = "church"),
-    church2 %>% mutate(type = "church"),
-    church3 %>% mutate(type = "church"),
-    church4 %>% mutate(type = "church"),
-    church5 %>% mutate(type = "church"),
-    church6 %>% mutate(type = "church"),
-    church7 %>% mutate(type = "church"),
-    church8 %>% mutate(type = "church"),
-    church9 %>% mutate(type = "church"),
-    church10 %>% mutate(type = "church"),
-    church11 %>% mutate(type = "church"),
-    church12 %>% mutate(type = "church")
-  )
-  
-  worship <- mosque %>% mutate(type = "mosque") %>% 
-    bind_rows(synagogue %>% mutate(type = "synagogue"),
-              cathedral %>% mutate(type = "cathedral"),
-              temple %>% mutate(type = "temple"),
-              shrine %>% mutate(type = "shrine"),
-              chapel %>% mutate(type = "chapel"),
-              church_full) 
+  worship <-  bind_rows(
+      mosque %>% mutate(type = "mosque"),
+      synagogue %>% mutate(type = "synagogue"),
+      cathedral %>% mutate(type = "cathedral"),
+      temple %>% mutate(type = "temple"),
+      shrine %>% mutate(type = "shrine"),
+      chapel %>% mutate(type = "chapel"),
+      church %>% mutate(type = "church")
+    ) 
 } else {
   worship <- fst::read_fst("data/worship.fst")
 }
@@ -123,5 +88,5 @@ p <- worship %>%
     axis.text = element_blank()
   )
 
-ggsave("images/places_of_worship.png", p, width = 20, height = 19.7, dpi = 2000)
+ggsave("images/places_of_worship.png", p, width = 20, height = 19.7, dpi = 1000)
 
