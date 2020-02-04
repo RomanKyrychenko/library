@@ -1,26 +1,12 @@
-
-#Інтерактивні лінії
-
 library(ggplot2)
 library(ggiraph)
-library(dplyr)
-library(scales)
-library(lubridate)
-library(grid)
-library(ggplot2)
-library(ggalt)
-library(ggthemes)
-library(viridis)
-library(stringi)
-library(readr)
 
-capital3 <- read_csv("https://raw.githubusercontent.com/RomanKyrychenko/plots/master/capital2.csv")
+capital3 <- readr::read_csv("data/bank_capital.csv")
 
-gg_path_3 = ggplot(capital3) +
-  geom_path_interactive(aes(Дата, Капітал, group=Банк, data_id = Банк,
-                                tooltip = paste(Банк,"\n",Статус), onclick = paste(Банк,"\n",Статус),color = Статус), size = .3) + 
+gg_path = ggplot(capital3) +
+  geom_path_interactive(aes(Дата, Капітал, group=Банк, data_id = Банк, tooltip = paste(Банк,"\n",Статус), onclick = paste(Банк,"\n",Статус),color = Статус), size = .3) + 
   geom_hline(yintercept = 0, size=0.3) +
-  scale_y_continuous(limits=c(-40000000, 31000000), labels = comma) +
+  scale_y_continuous(limits=c(-40000000, 31000000), labels = scales::comma) +
   scale_color_manual(values = c("#2b8cbe","#ece7f2")) +
   ylab("") +
   xlab("") +
@@ -45,4 +31,5 @@ gg_path_3 = ggplot(capital3) +
         strip.text = element_text(size = 4, angle = 0),
         strip.background=element_rect(colour = "white", fill="white"),
         text = element_text(family = "Arial"))
-ggiraph(code = {print(gg_path_3)}, hover_css = "stroke:#3182bd;stroke-width:3px;", width = 1, height = 5)
+
+ggiraph(code = {print(gg_path)}, hover_css = "stroke:#3182bd;stroke-width:3px;", width = 1, height = 5)
