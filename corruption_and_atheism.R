@@ -2,12 +2,6 @@ require(dplyr)
 
 suicide <- readr::read_csv("data/words_suicide_rate.csv")
 religious <- readr::read_csv("data/words_religiuos_rate.csv")
-gini <- readr::read_csv("data/words_gini_index.csv")
-alcohol <- readr::read_csv("data/words_alcohol_consumption.csv")
-corporate_tax <- readr::read_csv("data/words_corporate_tax_rates.csv")
-corruption <- readr::read_csv("data/worlds_corruption.csv")
-fragile <- readr::read_csv("data/worlds_fragile.csv")
-taxes <- readr::read_csv("data/worlds_taxes.csv")
 
 df <- inner_join(suicide, religious) %>% inner_join(gini) %>% inner_join(alcohol) %>% 
   inner_join(corporate_tax) %>% inner_join(taxes) %>% inner_join(corruption) %>% inner_join(fragile)
