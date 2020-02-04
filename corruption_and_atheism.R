@@ -1,16 +1,8 @@
 require(dplyr)
-
-suicide <- readr::read_csv("data/words_suicide_rate.csv")
-religious <- readr::read_csv("data/words_religiuos_rate.csv")
-
-df <- inner_join(suicide, religious) %>% inner_join(gini) %>% inner_join(alcohol) %>% 
-  inner_join(corporate_tax) %>% inner_join(taxes) %>% inner_join(corruption) %>% inner_join(fragile)
-
 require(ggplot2)
 
-df %>% 
-  mutate(atheism = unaffiliated / (jews + other + folkReligions + buddhists + hindus + unaffiliated + muslims + chistians)) %>% 
-  select_if(is.numeric) %>% cor()
+corruption <- readr::read_csv("data/worlds_corruption.csv")
+religious <- readr::read_csv("data/words_religiuos_rate.csv")
 
 S_sqrt <- function(x) ifelse(x == 0, 0, x^(1/4))
 IS_sqrt <- function(x) x^4
