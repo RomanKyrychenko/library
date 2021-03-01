@@ -1,0 +1,226 @@
+---
+title: "Automated text analysis in R"
+author: "Roman Kyrychenko"
+date: "2/27/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries
+
+```{r}
+suppressPackageStartupMessages({
+  library(tidytext) # text tokenization
+  library(stringr) # text transformations
+  library(stringdist) # word distances
+  library(text2vec) # document matrix and similarities
+  library(dplyr) # data manipulations
+  library(fuzzyjoin) # join using word distances
+  library(readr) # read and write files
+  library(readxl) # read excel files
+  library(glmnet) # logistic regression
+})
+```
+
+## Dataset
+
+```{r}
+text <- read_csv("https://raw.githubusercontent.com/RomanKyrychenko/library/master/data/pravda_sample.csv")
+
+text %>% head()
+```
+
+## Text encode
+
+First way:
+
+```{r}
+prep_fun = tolower
+tok_fun = word_tokenizer
+
+it_train = itoken(text$text, 
+             preprocessor = prep_fun, 
+             tokenizer = tok_fun, 
+             progressbar = FALSE)
+vocab = create_vocabulary(it_train)
+
+head(vocab %>% arrange(desc(doc_count)))
+```
+
+Second way:
+
+```{r}
+tokenized_text <- text %>%
+  unnest_tokens(word, text)
+```
+
+### BoW
+
+```{r}
+vectorizer = vocab_vectorizer(vocab)
+dtm_train = create_dtm(it_train, vectorizer)
+
+dim(dtm_train)
+```
+
+### Tf-IDF
+
+```{r}
+vocab = create_vocabulary(it_train)
+vectorizer = vocab_vectorizer(vocab)
+dtm_train = create_dtm(it_train, vectorizer)
+
+tfidf = TfIdf$new()
+dtm_train_tfidf = fit_transform(dtm_train, tfidf)
+```
+
+## Words and Text distances
+
+Currently, the following distance metrics are supported by stringdist.
+
+- **The Levenshtein distance (method='lv')** counts the number of deletions, insertions and substitutions necessary to turn b into a. This method is equivalent to R's native adist function.
+
+- **The Optimal String Alignment distance (method='osa')** is like the Levenshtein distance but also allows transposition of adjacent characters. Here, each substring may be edited only once. (For example, a character cannot be transposed twice to move it forward in the string).
+
+- **The longest common substring (method='lcs')** is defined as the longest string that can be obtained by pairing characters from a and b while keeping the order of characters intact. The lcs-distance is defined as the number of unpaired characters. The distance is equivalent to the edit distance allowing only deletions and insertions, each with weight one.
+
+- **The cosine distance (method='cosine')** is computed as $1-x\cdot y/(\|x\|\|y\|)$, where x and y were defined above.
+
+- Let X be the set of unique q-grams in a and Y the set of unique q-grams in b. **The Jaccard distance (method='jaccard')** is given by $1-\frac{|X\cap Y|}{|X\cup Y|}$.
+
+### Word
+
+```{r}
+methods <- c("osa", "lv", "lcs", "cosine", "jaccard")
+
+for (i in methods){
+  cat(paste0(i, ":\t", stringdist("патріот", "патріотизм", method = i), "\n"))
+}
+```
+
+### Document
+
+![distances](distances.jpg)
+
+#### Jaccard distance
+
+```{r}
+d1_d2_jac_sim = sim2(dtm_train, dtm_train, method = "jaccard", norm = "none")
+```
+
+```{r}
+most_similar_text <- function(index, sim_matrix = d1_d2_jac_sim){
+  cols <- 1:ncol(sim_matrix)
+  sims <- sim_matrix[index, cols[cols != index]]
+  cat("Similarity: ", max(sims))
+  cat("\n")
+  cat(text[index, 3][[1]])
+  cat("\n")
+  cat("\n")
+  cat(text[as.numeric(names(which.max(sims))), 3][[1]])
+}
+
+most_similar_text(3)
+```
+
+#### Cosine distance
+
+```{r}
+d1_d2_cos_sim = sim2(dtm_train_tfidf, dtm_train_tfidf, method = "cosine", norm = "l2")
+```
+
+```{r}
+most_similar_text(2, d1_d2_cos_sim)
+```
+
+## Sentiment analysis
+
+![Словники української мови](https://lang.org.ua/uk/dictionaries/)
+
+```{r}
+tone_dict <- read_delim("https://raw.githubusercontent.com/lang-uk/tone-dict-uk/master/tone-dict-uk.tsv", delim = "\t", col_names = F) %>% 
+  setNames(c("word", "tone"))
+
+head(tone_dict)
+```
+
+### Word approach
+
+```{r}
+sent <- tokenized_text %>% 
+  mutate(word = str_to_lower(word)) %>% 
+  left_join(tone_dict) %>% 
+  mutate(tone = ifelse(is.na(tone), 0, tone)) %>% 
+  group_by(url, title) %>% 
+  summarise(tone = mean(tone)) %>% 
+  arrange(desc(tone))
+```
+
+```{r}
+sent %>% 
+  mutate(year = as.numeric(sapply(url, function(x) str_split(x, "/")[[1]][6]))) %>% 
+  group_by(year) %>% 
+  summarise(tone = mean(tone)*100, n = n())
+```
+
+#### Add similarity
+
+```{r}
+sent <- tokenized_text %>% 
+  mutate(word = str_to_lower(word)) %>% 
+  fuzzyjoin::stringdist_left_join(tone_dict, by = "word", method="cosine", max_dist = 0.1) %>% 
+  mutate(tone = ifelse(is.na(tone), 0, tone)) %>% 
+  group_by(url, title) %>% 
+  summarise(tone = mean(tone)) %>% 
+  arrange(desc(tone))
+```
+
+```{r}
+sent %>% 
+  mutate(year = as.numeric(sapply(url, function(x) str_split(x, "/")[[1]][5]))) %>% 
+  group_by(year) %>% 
+  summarise(tone = mean(tone)*100, n = n())
+```
+
+### Logistic regression approach
+
+```{r}
+#own path to excel file
+sent_data <- read_excel("group_1.xlsx") %>% 
+  select(text, `Hate Speech Detection`)
+```
+
+```{r}
+prep_fun = tolower
+tok_fun = word_tokenizer
+
+it_train = itoken(sent_data$text, 
+             preprocessor = prep_fun, 
+             tokenizer = tok_fun, 
+             progressbar = FALSE)
+vocab = create_vocabulary(it_train)
+vectorizer = vocab_vectorizer(vocab)
+dtm_train = create_dtm(it_train, vectorizer)
+
+tfidf = TfIdf$new()
+dtm_train_tfidf = fit_transform(dtm_train, tfidf)
+```
+
+```{r}
+glmnet_classifier = cv.glmnet(x = dtm_train_tfidf, 
+                              y = sent_data$`Hate Speech Detection`, 
+                              family = 'binomial', 
+                              alpha = 1,
+                              type.measure = "auc",
+                              nfolds = 5,
+                              thresh = 1e-3,
+                              maxit = 1e3)
+```
+
+```{r}
+print(paste("max AUC =", round(max(glmnet_classifier$cvm), 4)))
+```
+
